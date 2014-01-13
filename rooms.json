@@ -1,0 +1,27 @@
+{
+  "start": {
+    "label": "Entrance",
+    "description": "The first room. The second room is to the north.",
+    "exits": { "north": "second" }
+  },
+
+  "second": {
+    "label": "Second Room",
+    "description": "This is the second room. The first room is to the south. The third room is to the west. The fourth room is to the north.",
+    "exits": { "south": "start",
+    "west": "third",
+    "north": "fourth" }
+  },
+
+  "third": {
+    "label": "Third Room",
+    "description": "This is the third room. The second room is to the east.",
+    "exits": { "east": "second" }
+  },
+
+  "fourth": {
+    "label": "Fourth Room",
+    "description": "This is the fourth room. The second room is to the south.",
+    "exits": { "south": "second" }
+  }
+}

@@ -19,6 +19,9 @@ defmodule Game.Mixfile do
   # To specify particular versions, regardless of the tag, do:
   # { :barbat, "~> 0.1", github: "elixir-lang/barbat" }
   defp deps do
-    []
+    [
+      { :jsonex, "2.0", github: "marcelog/jsonex", tag: "2.0" }
+      #{ :httpotion, github: "myfreeweb/httpotion" }
+    ]
   end
 end

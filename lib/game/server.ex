@@ -2,7 +2,7 @@ defrecord Player, name: ""
 defrecord GameState, player: nil, location: nil, rooms: nil
 defrecord Room, label: "", desc: "", exits: []
 
-alias Game.Rooms
+alias Game.RoomServer
 
 defmodule Game.Server do
   use GenServer.Behaviour
@@ -27,7 +27,7 @@ defmodule Game.Server do
     player = Player.new name: "Player"
 
     # Assume that room named :start exists
-    {:ok, location} = Rooms.room(rooms, :start)
+    {:ok, location} = RoomServer.room(rooms, :start)
 
     game = GameState.new player: player, location: location, rooms: rooms
 
@@ -41,12 +41,12 @@ defmodule Game.Server do
   def handle_call({:go, direction}, _sender, game = GameState[location: location, rooms: rooms]) do
 
     # Move to new room if possible, return new state
-    case Rooms.valid_move?(direction, location) do
+    case RoomServer.valid_move?(direction, location) do
 
       {true, room_name} ->
 
         # Fetch new room info and move there
-        Rooms.room(rooms, room_name) |> move_to_room(game)
+        RoomServer.room(rooms, room_name) |> move_to_room(game)
 
       {false, reason} ->
 
