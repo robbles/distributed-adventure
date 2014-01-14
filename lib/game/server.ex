@@ -1,5 +1,5 @@
 defrecord Player, name: ""
-defrecord GameState, player: nil, location: nil, rooms: nil
+defrecord GameState, player: nil, location: nil
 defrecord Room, label: "", desc: "", exits: []
 
 alias Game.RoomServer
@@ -8,28 +8,27 @@ defmodule Game.Server do
   use GenServer.Behaviour
 
   # Client functions
-  def start(rooms) do
-    {:ok, pid} = :gen_server.start_link(__MODULE__, rooms, [])               
-    pid
+  def start_link(player_name) do
+    :gen_server.start_link({:local, :games}, __MODULE__, player_name, [])
   end
 
-  def go(server, direction) do
-    :gen_server.call(server, {:go, direction})
+  def go(direction) do
+    :gen_server.call(:games, {:go, direction})
   end
 
-  def quit(server) do
-    :gen_server.call(server, :quit)
+  def quit() do
+    :gen_server.call(:games, :quit)
   end
 
   # GenServer callbacks
-  def init(rooms) do
+  def init(player_name) do
     # TODO: Allow player to change their name later somehow
-    player = Player.new name: "Player"
+    player = Player.new name: player_name
 
     # Assume that room named :start exists
-    {:ok, location} = RoomServer.room(rooms, :start)
+    {:ok, location} = RoomServer.room(:start)
 
-    game = GameState.new player: player, location: location, rooms: rooms
+    game = GameState.new player: player, location: location
 
     {:ok, game}
   end
@@ -38,7 +37,7 @@ defmodule Game.Server do
     {:stop, "Client quit", state}
   end
 
-  def handle_call({:go, direction}, _sender, game = GameState[location: location, rooms: rooms]) do
+  def handle_call({:go, direction}, _sender, game = GameState[location: location]) do
 
     # Move to new room if possible, return new state
     case RoomServer.valid_move?(direction, location) do
@@ -46,7 +45,7 @@ defmodule Game.Server do
       {true, room_name} ->
 
         # Fetch new room info and move there
-        RoomServer.room(rooms, room_name) |> move_to_room(game)
+        RoomServer.room(room_name) |> move_to_room(game)
 
       {false, reason} ->
 

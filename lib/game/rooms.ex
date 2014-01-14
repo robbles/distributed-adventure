@@ -13,13 +13,12 @@ defmodule Game.RoomServer do
   defp convert_room_name(room_name), do: room_name
 
   # Client functions
-  def start(path) do
-    {:ok, pid} = :gen_server.start_link(__MODULE__, path, [])               
-    pid
+  def start_link(path) when is_binary path do
+    :gen_server.start_link({:local, :rooms}, __MODULE__, path, [])
   end
 
-  def room(server, room_name) do
-    :gen_server.call(server, [get: room_name])
+  def room(room_name) do
+    :gen_server.call(:rooms, [get: room_name])
   end
 
   def valid_move?(direction, Room[label: label, exits: exits]) do
@@ -29,16 +28,16 @@ defmodule Game.RoomServer do
     end
   end
 
-  def quit(server) do
-    :gen_server.call(server, :quit)
+  def quit() do
+    :gen_server.call(:rooms, :quit)
   end
 
   # GenServer callbacks
-  def init(path) do
+  def init(path) when is_binary path do
+    {:ok, curdir} = :file.get_cwd()
     {:ok, rooms} = Game.RoomParser.read_rooms_file(path)
 
     state = RoomServer.new path: path, rooms: rooms
-
     {:ok, state}
   end
 
@@ -86,6 +85,7 @@ defmodule Game.RoomParser do
 
   def parse_room_list(room_list) do
     # TODO: add to hash instead of just returning keyword list
+    IO.puts "Parsing JSON list of rooms"
 
     rooms = Enum.map room_list, fn {key, element} ->
       {key, parse_room(element)}
