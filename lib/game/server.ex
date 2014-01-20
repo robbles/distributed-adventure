@@ -7,17 +7,19 @@ alias Game.RoomServer
 defmodule Game.Server do
   use GenServer.Behaviour
 
+  @name :games
+
   # Client functions
   def start_link(player_name) do
-    :gen_server.start_link({:local, :games}, __MODULE__, player_name, [])
+    :gen_server.start_link({:local, @name}, __MODULE__, player_name, [])
   end
 
   def go(direction) do
-    :gen_server.call(:games, {:go, direction})
+    :gen_server.call(@name, {:go, direction})
   end
 
   def quit() do
-    :gen_server.call(:games, :quit)
+    :gen_server.call(@name, :quit)
   end
 
   # GenServer callbacks

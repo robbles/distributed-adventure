@@ -10,7 +10,10 @@ defmodule Game.Mixfile do
 
   # Configuration for the OTP application
   def application do
-    [mod: { Game, [] }]
+    [
+      mod: { Game, [] },
+      applications: [ :exreloader, :ranch ]
+    ]
   end
 
   # Returns the list of dependencies in the format:
@@ -20,7 +23,9 @@ defmodule Game.Mixfile do
   # { :barbat, "~> 0.1", github: "elixir-lang/barbat" }
   defp deps do
     [
-      { :jsonex, "2.0", github: "marcelog/jsonex", tag: "2.0" }
+      {:exreloader, "0.0.1", [github: "yrashk/exreloader"]},
+      { :jsonex, "2.0", github: "marcelog/jsonex", tag: "2.0" },
+      { :ranch, "0.4.0", [ github: "extend/ranch", tag: "0.4.0" ] }
       #{ :httpotion, github: "myfreeweb/httpotion" }
     ]
   end

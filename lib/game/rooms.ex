@@ -4,6 +4,8 @@ defrecord RoomServer, path: nil, rooms: []
 defmodule Game.RoomServer do
   use GenServer.Behaviour
 
+  @name :rooms
+
   defp get_room_by_name(rooms, room_name) do
     room_name = convert_room_name room_name
     :proplists.get_value room_name, rooms
@@ -14,11 +16,11 @@ defmodule Game.RoomServer do
 
   # Client functions
   def start_link(path) when is_binary path do
-    :gen_server.start_link({:local, :rooms}, __MODULE__, path, [])
+    :gen_server.start_link({:local, @name}, __MODULE__, path, [])
   end
 
   def room(room_name) do
-    :gen_server.call(:rooms, [get: room_name])
+    :gen_server.call(@name, [get: room_name])
   end
 
   def valid_move?(direction, Room[label: label, exits: exits]) do
@@ -29,7 +31,7 @@ defmodule Game.RoomServer do
   end
 
   def quit() do
-    :gen_server.call(:rooms, :quit)
+    :gen_server.call(@name, :quit)
   end
 
   # GenServer callbacks
