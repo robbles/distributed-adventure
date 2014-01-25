@@ -1,4 +1,4 @@
-defrecord ConnectionState, socket: nil, name: "PLAYER", buffer: ""
+defrecord ConnectionState, socket: nil, name: "PLAYER"
 
 defmodule Game.SocketProtocol do
   @behaviour :ranch_protocol
@@ -23,7 +23,7 @@ defmodule Game.SocketProtocol do
 
   # ranch_protocol init/4
   def init(ref, socket) do
-    IO.puts "SocketProtocol: init/4 called"
+    IO.puts "SocketProtocol: init/2 called"
 
     # Initialize gen_fsm process and ranch protocol
     :ok = :proc_lib.init_ack({:ok, self})
@@ -34,7 +34,7 @@ defmodule Game.SocketProtocol do
     
     # Start gen_fsm loop
     state = ConnectionState.new socket: socket
-    :gen_fsm.enter_loop(__MODULE__, [], :connected, state)
+    :gen_fsm.enter_loop(__MODULE__, [debug: [:trace]], :connected, state)
   end
 
   # gen_fsm init/1
@@ -47,8 +47,6 @@ defmodule Game.SocketProtocol do
   end
 
   def handle_info({:tcp, socket, bin}, state, context = ConnectionState[]) do
-    IO.puts "SocketProtocol: data received from socket"
-
     # Flow control: enable forwarding of next TCP message
     :ok = @transport.setopts(socket, [active: :once])
     
@@ -56,8 +54,7 @@ defmodule Game.SocketProtocol do
   end
 
   defp handle_line(line, state, context) do
-    IO.puts "Received line:"
-    IO.puts inspect line
+    IO.puts "Received: #{inspect line}"
 
     args = :binary.split(line, " ", [:global])
 
@@ -83,8 +80,6 @@ defmodule Game.SocketProtocol do
   end
 
   def connected(parts, context = ConnectionState[socket: socket]) do
-    IO.puts "SocketProtocol: handling data in :connected state"
-
     # Echo back data
     @transport.send(socket, [Enum.join(parts, " "), "!\n"])
 
