@@ -29,8 +29,8 @@ defmodule Game.SocketProtocol do
     :ok = :proc_lib.init_ack({:ok, self})
     :ok = :ranch.accept_ack(ref)
 
-    # Allow receiving socket data through handle_info
-    :ok = @transport.setopts(socket, [active: :once])
+    # Enable receiving socket data through handle_info and line buffering
+    :ok = @transport.setopts(socket, [active: :once, packet: :line, recbuf: 1024])
     
     # Start gen_fsm loop
     state = ConnectionState.new socket: socket
@@ -41,7 +41,7 @@ defmodule Game.SocketProtocol do
   def init(_), do: {:stop, :not_implemented}
 
   # Async message handling
-  def handle_info({:tcp_closed, socket}, _state, context = ConnectionState[]) do
+  def handle_info({:tcp_closed, _socket}, _state, context = ConnectionState[]) do
     IO.puts "SocketProtocol: socket closed"
     {:stop, "client disconnected", context}
   end
@@ -52,34 +52,19 @@ defmodule Game.SocketProtocol do
     # Flow control: enable forwarding of next TCP message
     :ok = @transport.setopts(socket, [active: :once])
     
-    # TODO: handle line buffering and EOL stripping here
-    handle_data(bin, state, context)
-  end
-
-  defp handle_data(data, state, context = ConnectionState[buffer: buffer]) do
-    case :binary.split data, "\n"  do
-      [partial] ->
-        IO.puts "partial data, still waiting on newline"
-        IO.puts inspect partial
-        {:next_state, state, context.buffer(buffer <> partial)}
-
-      [eol, rest] ->
-        IO.puts "Received eol, handling line"
-        IO.puts inspect [eol, rest]
-        line = buffer <> eol
-        handle_line(String.rstrip(line), state, context.buffer(rest))
-    end
+    handle_line(String.rstrip(bin), state, context)
   end
 
   defp handle_line(line, state, context) do
+    IO.puts "Received line:"
+    IO.puts inspect line
+
     args = :binary.split(line, " ", [:global])
 
     # Use FSM functions to decide next state
     # TODO: catch badmatch error and return a generic message instead of dying
     apply(__MODULE__, state, [args, context])
   end
-
-  # TODO: parse_args function to split binary argument into words
 
   # Event handlers
   def connected(["name", arg], context = ConnectionState[socket: socket]) do
@@ -91,17 +76,17 @@ defmodule Game.SocketProtocol do
     { :next_state, :connected, context }
   end
 
+  # TODO: extract "quit" function so this can be called from many states
   def connected(["quit"], context = ConnectionState[socket: socket]) do
     @transport.send socket, "bye!\n"
     { :stop, :client_quit, context }
   end
 
-  def connected([data], context = ConnectionState[socket: socket]) do
+  def connected(parts, context = ConnectionState[socket: socket]) do
     IO.puts "SocketProtocol: handling data in :connected state"
-    IO.puts inspect data
 
     # Echo back data
-    @transport.send(socket, String.rstrip(data) <> "!\n")
+    @transport.send(socket, [Enum.join(parts, " "), "!\n"])
 
     { :next_state, :connected, context }
   end
