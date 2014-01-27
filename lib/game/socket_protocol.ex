@@ -55,6 +55,15 @@ Please set your handle with /name <your name>
 
 
   ##### Async message handling #####
+  def handle_info({:tcp_closed, _socket}, :ready, context = ConnectionContext[]) do
+    IO.puts "SocketProtocol: socket closed"
+
+    # Disconnect from server if client hard disconnects
+    Game.Server.quit
+
+    {:stop, "client disconnected", context}
+  end
+
   def handle_info({:tcp_closed, _socket}, _state, context = ConnectionContext[]) do
     IO.puts "SocketProtocol: socket closed"
     {:stop, "client disconnected", context}
@@ -152,9 +161,12 @@ Please set your handle with /name <your name>
   def waiting_for_name(["/quit"], context), do: quit(context)
   def waiting_for_name(["/help"], context), do: help(:waiting_for_name, context)
 
-  def ready(["/quit"], context), do: quit(context)
   def ready(["/help"], context), do: help(:ready, context)
   def ready(["/go", direction], context), do: go(direction, context)
+  def ready(["/quit"], context) do
+    Game.Server.quit
+    quit(context)
+  end
 
   def ready(parts, context), do: {:next_state, :ready, chat(parts, context)}
 
