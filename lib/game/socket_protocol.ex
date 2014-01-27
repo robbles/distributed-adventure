@@ -1,4 +1,8 @@
-defrecord ConnectionContext, socket: nil, name: nil
+defrecord ConnectionContext, socket: nil, name: nil, location: :no_room
+
+# TODO: add /go command and wire up game server command
+
+# TODO: pretty formatting of room descriptions
 
 defmodule Game.SocketProtocol do
   @behaviour :ranch_protocol
@@ -43,7 +47,7 @@ Please set your handle with /name <your name>
     welcome(context)
 
     # Become a gen_fsm server
-    :gen_fsm.enter_loop(__MODULE__, [debug: [:trace]], :connected, context)
+    :gen_fsm.enter_loop(__MODULE__, [debug: [:trace]], :waiting_for_name, context)
   end
 
   # gen_fsm init/1
@@ -105,24 +109,53 @@ Please set your handle with /name <your name>
     {:next_state, state, context}
   end
 
-  defp set_name(name, context = ConnectionContext[socket: socket]) do
+  defp register(name, context = ConnectionContext[socket: socket]) do
     @transport.send socket, "Your name is now \"#{name}\"!\n"
-    context.name(name)
+
+    {:ok, room} = Game.Server.join name
+    display_room(socket, room)
+
+    {:next_state, :ready, context.name(name).location(room)}
   end
 
-  def chat(parts, context = ConnectionContext[socket: socket, name: name]) do
+  defp go(direction, context = ConnectionContext[socket: socket]) do
+    case Game.Server.go(direction) do
+      {:ok, room} ->
+        display_room socket, room
+        {:next_state, :ready, context.location(room)}
+
+      {:error, reason} ->
+        display_error socket, reason
+        {:next_state, :ready, context}
+    end
+  end
+
+  defp display_room(socket, room) do
+    exits_desc = :proplists.get_keys(room.exits) |> Enum.join " and "
+
+    @transport.send socket, "You are now at \"#{room.label}\"\n\n#{room.desc}\n\n"
+    @transport.send socket, "Exits are to the #{exits_desc}.\n"
+  end
+
+  defp display_error(socket, message) do
+    @transport.send socket, "NOPE: #{message}\n\n"
+  end
+
+  defp chat(parts, context = ConnectionContext[socket: socket, name: name]) do
     # Echo back data
     @transport.send(socket, [name, ": ", Enum.join(parts, " "), "\n"])
     context
   end
 
   ##### Event Handlers #####
-  def connected(["/name", name], context), do: {:next_state, :ready, set_name(name, context)}
-  def connected(["/quit"], context), do: quit(context)
-  def connected(["/help"], context), do: help(:connected, context)
+  def waiting_for_name(["/name", name], context), do: register(name, context)
+  def waiting_for_name(["/quit"], context), do: quit(context)
+  def waiting_for_name(["/help"], context), do: help(:waiting_for_name, context)
 
   def ready(["/quit"], context), do: quit(context)
   def ready(["/help"], context), do: help(:ready, context)
+  def ready(["/go", direction], context), do: go(direction, context)
+
   def ready(parts, context), do: {:next_state, :ready, chat(parts, context)}
 
 end

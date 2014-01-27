@@ -1,29 +1,25 @@
-defrecord Room, label: "", desc: "", exits: []
-defrecord RoomServer, path: nil, rooms: []
+defmodule Game.Rooms do
 
-defmodule Game.RoomServer do
+defrecord Room, label: "", desc: "", exits: []
+
+defmodule Server do
   use GenServer.Behaviour
 
-  @name :rooms
+  defrecord RoomServer, path: nil, rooms: []
 
-  defp get_room_by_name(rooms, room_name) do
-    room_name = convert_room_name room_name
-    :proplists.get_value room_name, rooms
-  end
-
-  defp convert_room_name(:start), do: "start"
-  defp convert_room_name(room_name), do: room_name
+  @name :room_server
 
   # Client functions
   def start_link(path) when is_binary path do
-    :gen_server.start_link({:local, @name}, __MODULE__, path, [])
+    IO.puts "Rooms: starting link"
+    :gen_server.start_link({:local, @name}, __MODULE__, path, [debug: [:trace]])
   end
 
   def room(room_name) do
     :gen_server.call(@name, [get: room_name])
   end
 
-  def valid_move?(direction, Room[label: label, exits: exits]) do
+  def valid_move?(direction, Room[exits: exits]) do
     case :proplists.get_value direction, exits do
       :undefined -> {false, "no exit in that direction"}
       room_name -> {true, room_name}
@@ -36,8 +32,9 @@ defmodule Game.RoomServer do
 
   # GenServer callbacks
   def init(path) when is_binary path do
-    {:ok, curdir} = :file.get_cwd()
-    {:ok, rooms} = Game.RoomParser.read_rooms_file(path)
+    IO.puts "Rooms: started with config path #{path}"
+
+    {:ok, rooms} = Game.Rooms.Parser.read_rooms_file(path)
 
     state = RoomServer.new path: path, rooms: rooms
     {:ok, state}
@@ -56,6 +53,7 @@ defmodule Game.RoomServer do
     {:reply, reply, state}
   end
 
+  # Utility functions
   def get_test_rooms() do
     [
       start: Room.new(label: "Entrance", desc: "The first room. The second room is to the north.", exits: [north: :second]),
@@ -65,10 +63,18 @@ defmodule Game.RoomServer do
     ]
   end
 
+  defp get_room_by_name(rooms, room_name) do
+    room_name = convert_room_name room_name
+    :proplists.get_value room_name, rooms
+  end
+
+  defp convert_room_name(:start), do: "start"
+  defp convert_room_name(room_name), do: room_name
+
 end
 
 
-defmodule Game.RoomParser do
+defmodule Parser do
 
   # Utility functions
   def read_rooms_file(path) do
@@ -78,7 +84,7 @@ defmodule Game.RoomParser do
 
   defp parse_rooms_file({:ok, room_data}) do
     room_list = Jsonex.decode(room_data)
-    Game.RoomParser.parse_room_list(room_list)
+    parse_room_list(room_list)
   end
 
   defp parse_rooms_file({:error, reason}) do
@@ -102,5 +108,7 @@ defmodule Game.RoomParser do
     exits = :proplists.get_value("exits", data)
     Room.new label: label, desc: desc, exits: exits
   end
+
+end
 
 end

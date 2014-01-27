@@ -1,13 +1,13 @@
 {
   "start": {
     "label": "Entrance",
-    "description": "The first room. The second room is to the north.",
+    "description": "The first room. It is very primary in appearance.",
     "exits": { "north": "second" }
   },
 
   "second": {
     "label": "Second Room",
-    "description": "This is the second room. The first room is to the south. The third room is to the west. The fourth room is to the north.",
+    "description": "This is the second room. The first room came before this, and then this one showed up.",
     "exits": { "south": "start",
     "west": "third",
     "north": "fourth" }
@@ -15,13 +15,13 @@
 
   "third": {
     "label": "Third Room",
-    "description": "This is the third room. The second room is to the east.",
+    "description": "This is the third room.",
     "exits": { "east": "second" }
   },
 
   "fourth": {
     "label": "Fourth Room",
-    "description": "This is the fourth room. The second room is to the south.",
+    "description": "This is the fourth room.",
     "exits": { "south": "second" }
   }
 }
