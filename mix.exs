@@ -12,7 +12,7 @@ defmodule Game.Mixfile do
   def application do
     [
       mod: { Game, [] },
-      applications: [ :exreloader, :ranch ]
+      applications: [ :exreloader, :ranch, :httpotion ]
     ]
   end
 
@@ -25,8 +25,8 @@ defmodule Game.Mixfile do
     [
       {:exreloader, "0.0.1", [github: "yrashk/exreloader"]},
       { :jsonex, "2.0", github: "marcelog/jsonex", tag: "2.0" },
-      { :ranch, "0.4.0", [ github: "extend/ranch", tag: "0.4.0" ] }
-      #{ :httpotion, github: "myfreeweb/httpotion" }
+      { :ranch, "0.4.0", [ github: "extend/ranch", tag: "0.4.0" ] },
+      { :httpotion, github: "myfreeweb/httpotion" }
     ]
   end
 end

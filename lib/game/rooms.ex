@@ -2,6 +2,11 @@ defmodule Game.Rooms do
 
 defrecord Room, label: "", desc: "", exits: []
 
+alias HTTPotion.Response
+alias HTTPotion.HTTPError
+alias Game.Rooms.Fetcher
+alias Game.Rooms.Parser
+
 defmodule Server do
   use GenServer.Behaviour
 
@@ -53,17 +58,13 @@ defmodule Server do
     {:reply, reply, state}
   end
 
-  # Utility functions
-  def get_test_rooms() do
-    [
-      start: Room.new(label: "Entrance", desc: "The first room. The second room is to the north.", exits: [north: :second]),
-      second: Room.new(label: "Second Room", desc: "This is the second room. The first room is to the south. The third room is to the west. The fourth room is to the north.", exits: [south: :start, west: :third, north: :fourth]),
-      third: Room.new(label: "Third Room", desc: "This is the third room. The second room is to the east.", exits: [east: :second]),
-      fourth: Room.new(label: "Fourth Room", desc: "This is the fourth room. The second room is to the south.", exits: [south: :second])
-    ]
+  # Fetching rooms
+  def get_room_by_name(rooms, << "http://"::binary, url::binary >>) do
+    # TODO: try cache first, then HTTP on missing key
+    Fetcher.fetch_room_http("http://" <> url) |> Parser.parse_rooms_file
   end
 
-  defp get_room_by_name(rooms, room_name) do
+  def get_room_by_name(rooms, room_name) do
     room_name = convert_room_name room_name
     :proplists.get_value room_name, rooms
   end
@@ -73,6 +74,24 @@ defmodule Server do
 
 end
 
+defmodule Fetcher do
+
+  def fetch_room_http(url) do
+    try do
+      case HTTPotion.get url do
+
+        Response[body: body, status_code: status] when status in 200..299 ->
+          {:ok, body}
+
+        Response[body: body, status_code: status] ->
+          {:error, status}
+      end
+    rescue
+      HTTPError -> {:error, "connection error"}
+    end
+  end
+
+end
 
 defmodule Parser do
 
@@ -82,12 +101,12 @@ defmodule Parser do
     File.read(path) |> parse_rooms_file
   end
 
-  defp parse_rooms_file({:ok, room_data}) do
+  def parse_rooms_file({:ok, room_data}) do
     room_list = Jsonex.decode(room_data)
     parse_room_list(room_list)
   end
 
-  defp parse_rooms_file({:error, reason}) do
+  def parse_rooms_file({:error, reason}) do
     {:error, reason}
   end
 

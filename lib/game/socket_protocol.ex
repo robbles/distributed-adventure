@@ -98,7 +98,7 @@ Please set your handle with /name <your name>
 
 
   ##### Common handlers for multiple states #####
-  defp welcome(context = ConnectionContext[socket: socket]) do
+  defp welcome(ConnectionContext[socket: socket]) do
     @transport.send socket, @welcome_message
     @transport.send socket, "> "
   end
@@ -113,7 +113,7 @@ Please set your handle with /name <your name>
     {:next_state, state, context}
   end
 
-  defp no_line_match(line, state, context = ConnectionContext[socket: socket]) do
+  defp no_line_match(_line, state, context = ConnectionContext[socket: socket]) do
     @transport.send socket, "Sorry, I couldn't quite parse that. Try '/help'\n"
     {:next_state, state, context}
   end
