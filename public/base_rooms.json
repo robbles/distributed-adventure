@@ -2,7 +2,7 @@
   "start": {
     "label": "Entrance",
     "description": "The first room. It is very primary in appearance.",
-    "exits": { "north": "second" }
+    "exits": { "north": "second", "south": "http://localhost:8080/remote.json" }
   },
 
   "second": {

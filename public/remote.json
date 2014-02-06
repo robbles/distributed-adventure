@@ -1,0 +1,5 @@
+{
+  "label": "Remote Room",
+  "description": "This room has been fetched over the network! How exciting.",
+  "exits": { "north": "start" }
+}

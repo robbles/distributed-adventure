@@ -1,7 +1,9 @@
-[ "exreloader": {:git, "git://github.com/yrashk/exreloader.git", "1c23229b917893fcc03b1b4b2c932900baf3ba58", []},
+[ "cowboy": {:git, "git://github.com/extend/cowboy.git", "db52494371ea249f38d51108c7d79cf487ff6374", [tag: "0.9.0"]},
+  "cowlib": {:git, "git://github.com/extend/cowlib.git", "63298e8e160031a70efff86a1acde7e7db1fcda6", [ref: "0.4.0"]},
+  "exreloader": {:git, "git://github.com/yrashk/exreloader.git", "1c23229b917893fcc03b1b4b2c932900baf3ba58", []},
   "genx": {:git, "git://github.com/yrashk/genx.git", "1b857fa422a47269d5f151ecababd83f4835527d", []},
   "httpotion": {:git, "git://github.com/myfreeweb/httpotion.git", "f9407c497ce8e71ebea8cf94d08b093f90afa5bb", []},
   "ibrowse": {:git, "git://github.com/cmullaparthi/ibrowse.git", "d824491d37449763ac44398f8494731e0c1418c1", []},
   "jsonex": {:git, "git://github.com/marcelog/jsonex.git", "746c8492d66e130ee74cb2d857f8458fe3a2c0e2", [tag: "2.0"]},
   "jsx": {:git, "git://github.com/talentdeficit/jsx.git", "cb14b92a228e51f7bdcaa7eb17f035e4a5c0b47d", [tag: "v1.3.3"]},
-  "ranch": {:git, "git://github.com/extend/ranch.git", "de9b6f7a707efd308a6d6535d8296c15ea277308", [tag: "0.4.0"]} ]
+  "ranch": {:git, "git://github.com/extend/ranch.git", "5df1f222f94e08abdcab7084f5e13027143cc222", [ref: "0.9.0"]} ]
