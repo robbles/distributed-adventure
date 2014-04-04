@@ -1,12 +1,8 @@
-defrecord ConnectionContext, socket: nil, name: nil, location: :no_room
-
-# TODO: add /go command and wire up game server command
-
-# TODO: pretty formatting of room descriptions
+defrecord ConnectionContext, socket: nil, state: :waiting_for_name, name: nil, location: :no_room
 
 defmodule Game.SocketProtocol do
   @behaviour :ranch_protocol
-  use GenFSM.Behaviour
+  use GenServer.Behaviour
 
   @listener :game_tcp_listener
   @transport :ranch_tcp
@@ -27,7 +23,7 @@ Please set your handle with /name <your name>
   def start_link(ref, socket, _transport, _opts) do
     IO.puts "SocketProtocol: starting linked process"
 
-    # Use proc_lib to start for compatibility with gen_fsm
+    # Use proc_lib to start for compatibility with gen_server
     :proc_lib.start_link(__MODULE__, :init, [ref, socket])
   end
 
@@ -35,7 +31,7 @@ Please set your handle with /name <your name>
   def init(ref, socket) do
     IO.puts "SocketProtocol: init/2 called"
 
-    # Initialize gen_fsm process and ranch protocol
+    # Initialize gen_server process and ranch protocol
     :ok = :proc_lib.init_ack({:ok, self})
     :ok = :ranch.accept_ack(ref)
 
@@ -46,16 +42,16 @@ Please set your handle with /name <your name>
     context = ConnectionContext.new socket: socket
     welcome(context)
 
-    # Become a gen_fsm server
-    :gen_fsm.enter_loop(__MODULE__, [debug: [:trace]], :waiting_for_name, context)
+    # Become a gen_server
+    :gen_server.enter_loop(__MODULE__, [debug: [:trace]], context)
   end
 
-  # gen_fsm init/1
+  # gen_server init/1
   def init(_), do: {:stop, :not_implemented}
 
 
   ##### Async message handling #####
-  def handle_info({:tcp_closed, _socket}, :ready, context = ConnectionContext[]) do
+  def handle_info({:tcp_closed, _socket}, context = ConnectionContext[state: :ready]) do
     IO.puts "SocketProtocol: socket closed"
 
     # Disconnect from server if client hard disconnects
@@ -64,12 +60,12 @@ Please set your handle with /name <your name>
     {:stop, "client disconnected", context}
   end
 
-  def handle_info({:tcp_closed, _socket}, _state, context = ConnectionContext[]) do
+  def handle_info({:tcp_closed, _socket}, context = ConnectionContext[]) do
     IO.puts "SocketProtocol: socket closed"
     {:stop, "client disconnected", context}
   end
 
-  def handle_info({:tcp, socket, bin}, state, context = ConnectionContext[]) do
+  def handle_info({:tcp, socket, bin}, context = ConnectionContext[state: state]) do
     # Flow control: enable forwarding of next TCP message
     :ok = @transport.setopts(socket, [active: :once])
     
@@ -82,7 +78,6 @@ Please set your handle with /name <your name>
     args = :binary.split(line, " ", [:global])
 
     # Use FSM functions to decide next state
-    # TODO: catch badmatch error and return a generic message instead of dying
     result = try do
       apply(__MODULE__, state, [args, context])
     rescue
@@ -93,9 +88,17 @@ Please set your handle with /name <your name>
     @transport.send socket, "> "
 
     # Go to next state
-    result
+    transition(result)
   end
 
+  # Handle gen_fsm responses, keeping manual state in record
+  def transition({:next_state, new_state, context}) do
+    {:noreply, context.state(new_state)}
+  end
+
+  def transition({:stop, reason, context}) do
+    {:stop, reason, context}
+  end
 
   ##### Common handlers for multiple states #####
   defp welcome(ConnectionContext[socket: socket]) do
